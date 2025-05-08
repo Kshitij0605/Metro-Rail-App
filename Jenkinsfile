@@ -2,13 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "metro-app"
-        MYSQL_IMAGE = "mysql:8"
         COMPOSE_FILE = "docker-compose.yml"
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -17,15 +14,13 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    docker.build(DOCKER_IMAGE, '.')
-                }
+                sh 'docker build -t metro-app .'
             }
         }
 
         stage('Start Services with Docker Compose') {
             steps {
-                sh 'docker-compose -f ${COMPOSE_FILE} up -d'
+                sh 'docker compose -f docker-compose.yml up -d'
             }
         }
 
@@ -44,17 +39,14 @@ pipeline {
 
         stage('Run Integration Tests') {
             steps {
-                script {
-                    // Assuming your app exposes endpoints on port 8080
-                    sh 'sleep 10'  // Give app a moment to fully boot up
-                    sh 'curl -f http://localhost:8080/api/stations'
-                }
+                sh 'sleep 10'
+                sh 'curl -f http://localhost:8080/api/stations'
             }
         }
 
         stage('Tear Down') {
             steps {
-                sh 'docker-compose -f ${COMPOSE_FILE} down -v'
+                sh 'docker compose -f docker-compose.yml down -v'
             }
         }
     }
@@ -62,7 +54,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning up Docker containers...'
-            sh 'docker-compose -f ${COMPOSE_FILE} down -v || true'
+            sh 'docker compose -f docker-compose.yml down -v || true'
         }
     }
 }
